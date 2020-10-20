@@ -24,7 +24,7 @@ namespace XYZtoSawSimTsConverter
             //for each xyz z coordinate create another key value set for the dictionary with the single key being the z coordinate and all of the xy values fed into a list of tuples
 
             string line;
-            int counter = 0;
+
             _profileSet = new Dictionary<float, List<Tuple<float, float>>>();
             System.IO.StreamReader xyzFile = new System.IO.StreamReader(pathToXYZ);
 
@@ -54,7 +54,7 @@ namespace XYZtoSawSimTsConverter
                                
                 
             }
-            Console.WriteLine("Number of lines: %d", counter);
+
         }
 
         /// <summary>
@@ -79,11 +79,16 @@ namespace XYZtoSawSimTsConverter
         {
             Single xVal = Single.Parse(coordArray[0]);
             Single yVal = Single.Parse(coordArray[1]);
+
+
+
             //multiply by 1000 for thousandths
             xVal = xVal * 1000;
             yVal = yVal * 1000;
 
-
+            //round to nearest integer
+            xVal = Single.Parse(Math.Round(xVal, 0).ToString());
+            yVal = Single.Parse(Math.Round(yVal, 0).ToString());
             Tuple<Single, Single> xyPoints = new Tuple<float, float>(xVal, yVal);
 
             return xyPoints;
@@ -96,7 +101,7 @@ namespace XYZtoSawSimTsConverter
         /// takes the dictionary of profiles from the xyz read operation (Key = Unique z value, Value = List of x,y coordinates in tuples) and writes to a SawSim format file 
         /// </summary>
         /// <param name="pathToDestination"></param>
-        public void writeSawSimFile(string pathToDestination, int logNum)
+        public void writeSawSimFile(string pathToDestination, int logNum, int countNum)
         {
             //create a list containing one string for each line in the SawSim file
             List<String> SawSimLine = new List<string>();
@@ -107,13 +112,19 @@ namespace XYZtoSawSimTsConverter
 
             foreach (KeyValuePair<Single, List<Tuple<Single, Single>>> profile in ProfileSet)
             {
+                string zString = profile.Key.ToString();
+               
+
                 //start a profile line using the current z value
-                string currentProfile = profile.Key.ToString() + "      ";
+                string currentProfile = getSpacesforZWord(zString) + zString;
 
                 //for a given z value, concatenate all of the x, y coordinates on the end of the line
                 foreach(Tuple<Single, Single> coordinate in profile.Value)
                 {
-                    currentProfile = currentProfile + coordinate.Item1.ToString() + "," + coordinate.Item2.ToString() + "     ";
+                    string xyString = coordinate.Item1.ToString() + "," + coordinate.Item2.ToString();
+                    //get the spaces for the xy word, and add the word to the current line string
+
+                    currentProfile = currentProfile + getSpacesforXYWord(xyString) + xyString;
                 }
 
                 SawSimLine.Add(currentProfile);
@@ -121,10 +132,41 @@ namespace XYZtoSawSimTsConverter
             }
             lastLength = lastLength + 1000;
             SawSimLine.Add("EndLog          " + lastLength);
+            string pathToFile = string.Format(pathToDestination + "\\" + countNum + "_" + logNum + ".txt");
+            System.IO.File.WriteAllLines(pathToFile , SawSimLine.ToArray());
 
-            Console.WriteLine("Total current log length: %d", lastLength);
         }
+        string getSpacesforXYWord(string word)
+        {
+            int numSpaces = 0;
+            int numChars = word.Length;
+            numSpaces = 16 - numChars;
+            string spaceString = "";
+
+            for (int i = 0; i < numSpaces; i++)
+            {
+                spaceString = spaceString + " ";
+            }
 
 
+            return spaceString;
+
+        }
+        string getSpacesforZWord(string word)
+        {
+            int numSpaces = 0;
+            int numChars = word.Length;
+            numSpaces = 6 - numChars;
+            string spaceString = "";
+
+            for(int i = 0; i < numSpaces; i++)
+            {
+                spaceString = spaceString + " ";
+            }
+
+
+            return spaceString;
+
+        }
     }
 }
